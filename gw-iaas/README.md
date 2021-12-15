@@ -12,3 +12,15 @@ WIP repository for the code used to implement the experiments in [Hardware-accel
 Built on top of [Poetry](https://python-poetry.org), which is required to run. Most pipelines will also require a user-managed Google Cloud [service account key](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#creating_service_account_keys) for deploying clients and services on cloud resources.
 
 Additional steps will be required for each of the various pipelines, please consult their individual READMEs. Libraries in `libs` will be available on PyPi sometime in the near future.
+
+### Installation of Poetry
+To install Poetry >=1.2, one can use the following command:
+```console
+$ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py \
+    | python - --preview
+```
+One can check the version of Poetry by running:
+```console
+$ poetry -V
+Poetry (version 1.2.0a2)
+```

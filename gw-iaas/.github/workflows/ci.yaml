@@ -1,0 +1,73 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.8, 3.9]
+        poetry-version: [1.1.11, 1.2.0a2]
+    steps:
+    - uses: actions/checkout@v2
+    - 
+      uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          typeo:
+            - 'libs/hermes/hermes.typeo/**'
+          quiver:
+            - 'libs/hermes/hermes.quiver/**'
+            - 'libs/hermes/hermes.gwftools/**'
+          gwftools:
+            - 'libs/hermes/hermes.gwftools/**'
+            - 'libs/hermes/hermes.quiver/**'
+            - 'libs/hermes/hermes.stillwater/**'
+    - 
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - 
+      name: Set up poetry
+      uses: abatilo/actions-poetry@v2.0.0
+      with:
+        poetry-version: ${{ matrix.poetry-version }}
+    -
+      name: Install tox
+      run: |
+        python -m pip install --upgrade pip
+        pip install tox tox-gh-actions
+    -
+      name: typeo ci
+      if: steps.filter.outputs.typeo == 'true'
+      run: |
+        cd libs/hermes/hermes.typeo
+        tox
+
+    # skip quiver CI for poetry<1.2 because of issue
+    # outlined in https://github.com/python-poetry/poetry/issues/4242
+    -
+      name: quiver ci
+      if: steps.filter.outputs.quiver == 'true'
+      run: |
+        cd libs/hermes/hermes.quiver
+        [[ ${{ matrix.poetry-version }} == "1.1.11" ]] || tox
+
+    # run gwftools CI manually rather than with
+    # tox because tox runs install from virtualenv
+    # directory, and so local stillwater dependency
+    # points to bad relative path
+    -
+      name: gwftools ci
+      if: steps.filter.outputs.gwftools == 'true'
+      run: |
+        cd libs/hermes/hermes.gwftools
+        poetry install -v
+        poetry run pytest -m "not gcs and not gwf" tests

@@ -1,0 +1,78 @@
+name: build-containers
+
+on:
+  push:
+    branches: main
+
+env:
+  CUDA_MAJOR_VERSION: "11"
+  CUDA_MINOR_VERSION: "4"
+  CUDA_PATCH_VERSION: "2"
+  TRT_VERSION: "8.2.0"
+  POETRY_VERSION: "1.2.0a2"
+  CONDA_TAG: "4.10.3"
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    environment: dockerhub
+    steps:
+    - 
+      name: Checkout
+      uses: actions/checkout@v2
+
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          export:
+            - 'projects/gw-iaas/export/**'
+            - 'libs/hermes/hermes.quiver/**'
+            - 'libs/hermes/hermes.typeo/**'
+          client:
+            - 'projects/gw-iaas/clients/**'
+            - 'libs/hermes/hermes.stillwater/**'
+            - 'libs/hermes/hermes.gwftools/**'
+            - 'libs/hermes/hermes.quiver/**'
+            - 'libs/hermes/hermes.typeo/**'
+    -
+      name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    -
+      name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    -
+      name: Login to DockerHub
+      uses: docker/login-action@v1 
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    -
+      name: GW-IaaS export container build
+      id: gw-iaas-export-container-build
+      uses: docker/build-push-action@v2
+      if: steps.filter.outputs.export == 'true'
+      with:
+        context: .
+        file: projects/gw-iaas/export/Dockerfile
+        push: true
+        tags: fastml/gw-iaas-export:latest
+        build-args: |
+          CUDA_MAJOR_VERSION=${{ env.CUDA_MAJOR_VERSION }}
+          CUDA_MINOR_VERSION=${{ env.CUDA_MINOR_VERSION }}
+          CUDA_PATCH_VERSION=${{ env.CUDA_PATCH_VERSION }}
+          TRT_VERSION=${{ env.TRT_VERSION }}
+          POETRY_VERSION=${{ env.POETRY_VERSION }}
+    -
+      name: GW-IaaS client container build
+      id: gw-iaas-client-container-build
+      uses: docker/build-push-action@v2
+      if: steps.filter.outputs.client == 'true'
+      with:
+        context: .
+        file: projects/gw-iaas/clients/Dockerfile
+        push: true
+        tags: fastml/gw-iaas-client:latest
+        build-args: |
+          CONDA_TAG=${{ env.CONDA_TAG }}
+          POETRY_VERSION=${{ env.POETRY_VERSION }}

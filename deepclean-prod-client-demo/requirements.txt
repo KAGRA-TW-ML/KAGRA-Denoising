@@ -1,0 +1,7 @@
+# numpy>=1.11
+# scipy>=0.16.0
+# bokeh
+# gwpy
+# torchsummary
+# torch>=1.0.0
+# torchvision
